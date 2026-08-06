@@ -63,6 +63,22 @@
     });
 
     initSync(video, T0);
+
+    // Fallback: si el navegador bloquea el autoplay con sonido,
+    // muestra un cartel y arranca con un clic. En la TV en modo
+    // kiosko (con flag) arranca solo y nunca aparece el cartel.
+    const overlay = document.createElement("div");
+    overlay.style.cssText =
+      "position:fixed;inset:0;background:rgba(0,0,0,0.75);color:#fff;" +
+      "display:flex;align-items:center;justify-content:center;" +
+      "font-family:system-ui,sans-serif;font-size:24px;cursor:pointer;z-index:9999;";
+    overlay.textContent = "▶ Toca para reproducir con sonido";
+    overlay.addEventListener("click", () => {
+      video.play().catch(() => {});
+      overlay.remove();
+    });
+    document.body.appendChild(overlay);
+    video.play().then(() => overlay.remove()).catch(() => {});
   </script>
 </body>
 </html>
