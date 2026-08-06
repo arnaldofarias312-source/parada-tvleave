@@ -14,10 +14,10 @@ export function initSync(video, t0 = 0) {
     const target = elapsed % duration; // dónde DEBERÍA estar el video
     const diff = Math.abs(video.currentTime - target);
 
-    // Si el navegador se desvió más de 0.3s (por buffering, etc.),
+    // Si el navegador se desvió más de 0.8s (por buffering, etc.),
     // lo re-sincronizamos de golpe. Si no, lo dejamos correr solo
-    // para que no se vea entrecortado.
-    if (diff > 0.3) {
+    // para que no se vea entrecortado ni con saltos.
+    if (diff > 0.8) {
       video.currentTime = target;
     }
     if (video.paused) {
