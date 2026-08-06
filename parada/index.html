@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Parada - Panel</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #111;
+      overflow: hidden;
+      font-family: system-ui, sans-serif;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      width: 100vw;
+      height: 100vh;
+    }
+    .cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #222;
+      overflow: hidden;
+      color: #666;
+      font-size: 2vw;
+      letter-spacing: 0.05em;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="grid">
+    <div class="cell">
+      <video id="ad" autoplay playsinline></video>
+    </div>
+    <div class="cell">En proceso</div>
+    <div class="cell">En proceso</div>
+    <div class="cell">En proceso</div>
+  </div>
+
+  <script type="module">
+    import { VIDEO_URL, T0 } from "../shared/config.js";
+    import { initSync } from "../shared/sync.js";
+
+    const video = document.getElementById("ad");
+    video.src = VIDEO_URL;
+
+    // Vertical (grabado con teléfono) → barras negras a los lados.
+    // Horizontal → llena todo el cuadrante.
+    video.addEventListener("loadedmetadata", () => {
+      const portrait = video.videoHeight > video.videoWidth;
+      video.style.objectFit = portrait ? "contain" : "cover";
+    });
+
+    initSync(video, T0);
+  </script>
+</body>
+</html>

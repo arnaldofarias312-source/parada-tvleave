@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Publicidad - Parada</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #000;
+      overflow: hidden;
+    }
+    video {
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <video id="ad" autoplay playsinline></video>
+
+  <script type="module">
+    import { VIDEO_URL, T0 } from "../shared/config.js";
+    import { initSync } from "../shared/sync.js";
+
+    const video = document.getElementById("ad");
+    video.src = VIDEO_URL;
+
+    // Vertical (grabado con teléfono) → barras negras a los lados.
+    // Horizontal → llena toda la pantalla.
+    video.addEventListener("loadedmetadata", () => {
+      const portrait = video.videoHeight > video.videoWidth;
+      video.style.objectFit = portrait ? "contain" : "cover";
+    });
+
+    initSync(video, T0);
+  </script>
+</body>
+</html>
