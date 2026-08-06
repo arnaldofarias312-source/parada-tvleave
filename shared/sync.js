@@ -6,7 +6,7 @@
 export function initSync(video, t0 = 0) {
   let duration = null;
 
-  function correctPosition() {
+  function correctPosition(force = false) {
     if (!duration) return;
 
     const now = Date.now() / 1000; // hora actual en segundos
@@ -14,10 +14,11 @@ export function initSync(video, t0 = 0) {
     const target = elapsed % duration; // dónde DEBERÍA estar el video
     const diff = Math.abs(video.currentTime - target);
 
-    // Si el navegador se desvió más de 0.8s (por buffering, etc.),
-    // lo re-sincronizamos de golpe. Si no, lo dejamos correr solo
-    // para que no se vea entrecortado ni con saltos.
-    if (diff > 0.8) {
+    // Al cargar (force) siempre salta a la posición exacta, para que una
+    // pantalla que se refresca/reinicia quede sincronizada de inmediato.
+    // Durante la reproducción solo corrige si el desvío supera 0.8s, para
+    // no verse entrecortado ni con saltos.
+    if (force || diff > 0.8) {
       video.currentTime = target;
     }
     if (video.paused) {
@@ -29,7 +30,7 @@ export function initSync(video, t0 = 0) {
 
   video.addEventListener("loadedmetadata", () => {
     duration = video.duration;
-    correctPosition();
+    correctPosition(true);
   });
 
   // Revisa y corrige cada 5 segundos.
@@ -37,6 +38,6 @@ export function initSync(video, t0 = 0) {
 
   // Si la pestaña estuvo oculta/dormida y vuelve, corrige al instante.
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) correctPosition();
+    if (!document.hidden) correctPosition(true);
   });
 }
