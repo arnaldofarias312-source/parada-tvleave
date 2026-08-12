@@ -48,15 +48,27 @@ export function initSync(video, t0 = 0) {
     const now = (Date.now() + clockOffsetMs) / 1000; // hora corregida
     const elapsed = now - t0;
     const target = elapsed % duration; // dónde DEBERÍA estar el video
-    const diff = Math.abs(video.currentTime - target);
+    const diff = target - video.currentTime; // positivo = atrasado
 
-    // Al cargar (force) siempre salta a la posición exacta, para que una
-    // pantalla que se refresca/reinicia quede sincronizada de inmediato.
-    // Durante la reproducción solo corrige si el desvío supera 0.3s, para
-    // mantener las pantallas bien pegadas sin verse entrecortado.
-    if (force || diff > 0.3) {
+    // Al cargar (force) o con un desvío grande, salta de golpe a la
+    // posición exacta para quedar sincronizado de inmediato.
+    if (force || Math.abs(diff) > 0.3) {
       video.currentTime = target;
+      video.playbackRate = 1;
+      if (video.paused) {
+        video.play().catch(() => {
+          // Si el navegador bloquea el autoplay, reintenta en el próximo tick.
+        });
+      }
+      return;
     }
+
+    // Corrección fina y continua vía playbackRate (máx ±3%): en vez de
+    // saltar, el video se acelera o desacelera imperceptiblemente para
+    // converger al reloj sin tirones y mantenerse pegado a él.
+    const rate = 1 + diff * 0.5;
+    video.playbackRate = Math.max(0.97, Math.min(1.03, rate));
+
     if (video.paused) {
       video.play().catch(() => {
         // Si el navegador bloquea el autoplay, reintenta en el próximo tick.
@@ -74,8 +86,8 @@ export function initSync(video, t0 = 0) {
   refreshClockOffset();
   setInterval(refreshClockOffset, 10 * 60 * 1000);
 
-  // Revisa y corrige cada 2 segundos.
-  setInterval(correctPosition, 2000);
+  // Revisa y corrige cada segundo para una convergencia suave.
+  setInterval(correctPosition, 1000);
 
   // Si la pestaña estuvo oculta/dormida y vuelve, corrige al instante.
   document.addEventListener("visibilitychange", () => {
