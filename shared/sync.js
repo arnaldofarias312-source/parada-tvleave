@@ -12,17 +12,15 @@ async function getServerClockOffsetMs() {
   const samples = [];
 
   // Tomamos varias muestras y nos quedamos con las de menor latencia:
-  // menos ruido de red ⇒ offset más preciso que un único HEAD request.
+  // menos ruido de red ⇒ offset más preciso que un único request.
+  const clockUrl = new URL("/api/time", window.location.origin);
   for (let i = 0; i < 5; i++) {
     const start = performance.now();
     try {
-      const res = await fetch(window.location.href, {
-        method: "HEAD",
-        cache: "no-store",
-      });
-      const serverNow = new Date(res.headers.get("date")).getTime();
+      const res = await fetch(clockUrl, { cache: "no-store" });
+      const data = await res.json();
       const roundTripMs = performance.now() - start;
-      samples.push({ offset: serverNow + roundTripMs / 2 - Date.now(), rtt: roundTripMs });
+      samples.push({ offset: data.now + roundTripMs / 2 - Date.now(), rtt: roundTripMs });
     } catch {
       // muestra fallida, se ignora
     }
