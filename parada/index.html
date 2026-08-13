@@ -15,8 +15,11 @@
     }
     .grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 2fr 1.5fr 1.5fr;
       grid-template-rows: 1fr 1fr;
+      grid-template-areas:
+        "izq  top-der  top-der"
+        "izq  video    bot-der";
       width: 100vw;
       height: 100vh;
     }
@@ -30,6 +33,10 @@
       font-size: 2vw;
       letter-spacing: 0.05em;
     }
+    .cell-izq     { grid-area: izq; }
+    .cell-top-der { grid-area: top-der; }
+    .cell-video   { grid-area: video; }
+    .cell-bot-der { grid-area: bot-der; }
     video {
       width: 100%;
       height: 100%;
@@ -40,12 +47,12 @@
 </head>
 <body>
   <div class="grid">
-    <div class="cell">
+    <div class="cell cell-izq">En proceso</div>
+    <div class="cell cell-top-der">En proceso</div>
+    <div class="cell cell-video">
       <video id="ad" preload="auto" muted autoplay loop playsinline></video>
     </div>
-    <div class="cell">En proceso</div>
-    <div class="cell">En proceso</div>
-    <div class="cell">En proceso</div>
+    <div class="cell cell-bot-der">En proceso</div>
   </div>
 
   <script type="module">
