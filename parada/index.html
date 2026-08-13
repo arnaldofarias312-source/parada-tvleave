@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Parada - Panel</title>
   <style>
-    html, body {
+    html,
+    body {
       margin: 0;
       padding: 0;
       height: 100%;
@@ -13,6 +15,7 @@
       overflow: hidden;
       font-family: system-ui, sans-serif;
     }
+
     .grid {
       display: grid;
       grid-template-columns: 2fr 1.5fr 1.5fr;
@@ -23,6 +26,7 @@
       width: 100vw;
       height: 100vh;
     }
+
     .cell {
       display: flex;
       align-items: center;
@@ -33,16 +37,31 @@
       font-size: 2vw;
       letter-spacing: 0.05em;
     }
-    .cell-izq     { grid-area: izq; padding: 0; }
-    .cell-top-der { grid-area: top-der; }
-    .cell-video   { grid-area: video; }
-    .cell-bot-der { grid-area: bot-der; }
+
+    .cell-izq {
+      grid-area: izq;
+      padding: 0;
+    }
+
+    .cell-top-der {
+      grid-area: top-der;
+    }
+
+    .cell-video {
+      grid-area: video;
+    }
+
+    .cell-bot-der {
+      grid-area: bot-der;
+    }
+
     .cell-izq iframe {
       width: 100%;
       height: 100%;
       border: none;
       display: block;
     }
+
     video {
       width: 100%;
       height: 100%;
@@ -51,10 +70,11 @@
     }
   </style>
 </head>
+
 <body>
   <div class="grid">
     <div class="cell cell-izq">
-      <iframe src="https://bustrack-realtime-vy9i.vercel.app/" title="BusTrack Realtime" allowfullscreen></iframe>
+      <iframe src="https://mapa-chi-ashy.vercel.app/" title="BusTrack Realtime" allowfullscreen></iframe>
     </div>
     <div class="cell cell-top-der">En proceso</div>
     <div class="cell cell-video">
@@ -80,4 +100,5 @@
     initSync(video, T0);
   </script>
 </body>
+
 </html>
