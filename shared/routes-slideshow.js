@@ -27,12 +27,12 @@ export function initRoutesSlideshow(container, { intervalMs = 7000 } = {}) {
       }
       .rs-header-overlay {
         position: absolute;
-        top: 20px;
-        left: 20px;
+        top: 0;
+        left: 0;
         background: rgba(255, 255, 255, 0.9);
         padding: 12px 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        border-radius: 0 0 8px 0;
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
         z-index: 1000;
       }
       .rs-title {
