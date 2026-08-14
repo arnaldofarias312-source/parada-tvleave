@@ -1,8 +1,7 @@
 # Parada TV
 
-> **Nota para IAs de código (ZCode, Antigravity, etc.):** lee esta sección
-> completa antes de sugerir o hacer cambios. Contiene contexto de negocio
-> que no es obvio solo mirando el código.
+> **Nota:** lee esta sección completa antes de hacer o sugerir cambios.
+> Contiene contexto de negocio que no es obvio solo mirando el código.
 
 ## Contexto del proyecto
 

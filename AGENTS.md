@@ -1,4 +1,4 @@
-# Instrucciones para agentes de código (ZCode, Antigravity, etc.)
+# Instrucciones para desarrollo y mantenimiento
 
 Lee `README.md` primero — tiene el contexto completo del proyecto.
 
