@@ -1,11 +1,6 @@
-// Slideshow de rutas de autobús. Muestra una ruta a la vez (nombre,
-// dirección y trazado vectorial) y pasa a la siguiente cada `intervalMs`.
-// No depende de ningún mapa externo — el trazado ya viene pre-calculado
-// en routes-data.js, así que funciona sin conexión a APIs de mapas.
+import { ROUTES } from "./routes-data.js";
 
-import { ROUTES, ROUTES_VIEWBOX } from "./routes-data.js";
-
-export function initRoutesSlideshow(container, { intervalMs = 4000 } = {}) {
+export function initRoutesSlideshow(container, { intervalMs = 7000 } = {}) {
   container.innerHTML = `
     <style>
       .rs-wrap {
@@ -16,62 +11,61 @@ export function initRoutesSlideshow(container, { intervalMs = 4000 } = {}) {
         align-items: center;
         justify-content: center;
         background: #0d0d10;
-        color: #eee;
+        color: #111;
         font-family: system-ui, sans-serif;
         position: relative;
         overflow: hidden;
       }
-      .rs-header {
+      .rs-map-wrap {
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        transition: opacity 0.6s ease;
+      }
+      .rs-map-wrap.rs-visible {
+        opacity: 1;
+      }
+      .rs-header-overlay {
         position: absolute;
-        top: 4%;
-        left: 0;
-        right: 0;
-        text-align: center;
+        top: 20px;
+        left: 20px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 1000;
       }
       .rs-title {
-        font-size: 1.6vw;
+        font-size: 1.4vw;
         font-weight: 700;
-        letter-spacing: 0.02em;
         margin: 0;
       }
       .rs-subtitle {
-        font-size: 1.1vw;
-        color: #9aa0a6;
+        font-size: 1vw;
+        color: #555;
         margin: 0.3em 0 0;
       }
       .rs-count {
         position: absolute;
-        bottom: 4%;
-        right: 4%;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 6px 12px;
+        border-radius: 6px;
         font-size: 0.9vw;
-        color: #666;
+        color: #333;
+        z-index: 1000;
       }
-      .rs-svg-wrap {
-        width: 82%;
-        height: 62%;
-        opacity: 0;
-        transition: opacity 0.6s ease;
+      /* Ocultar controles del mapa que no se necesitan en un slideshow */
+      .leaflet-control-zoom, .leaflet-control-attribution {
+        display: none !important;
       }
-      .rs-svg-wrap.rs-visible {
-        opacity: 1;
-      }
-      .rs-line {
-        fill: none;
-        stroke: #ff7a00;
-        stroke-width: 4;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-      }
-      .rs-dot-start { fill: #4caf50; }
-      .rs-dot-end { fill: #e53935; }
     </style>
     <div class="rs-wrap">
-      <div class="rs-header">
+      <div id="rs-map" class="rs-map-wrap rs-visible"></div>
+      <div class="rs-header-overlay">
         <p class="rs-title" id="rs-title"></p>
         <p class="rs-subtitle" id="rs-subtitle"></p>
-      </div>
-      <div class="rs-svg-wrap" id="rs-svg-wrap">
-        <svg viewBox="${ROUTES_VIEWBOX}" width="100%" height="100%" id="rs-svg"></svg>
       </div>
       <div class="rs-count" id="rs-count"></div>
     </div>
@@ -79,34 +73,65 @@ export function initRoutesSlideshow(container, { intervalMs = 4000 } = {}) {
 
   const titleEl = container.querySelector("#rs-title");
   const subtitleEl = container.querySelector("#rs-subtitle");
-  const svgWrapEl = container.querySelector("#rs-svg-wrap");
-  const svgEl = container.querySelector("#rs-svg");
   const countEl = container.querySelector("#rs-count");
+  const mapEl = container.querySelector("#rs-map");
 
+  // Iniciar Leaflet
+  const map = L.map(mapEl, {
+    zoomControl: false,
+    scrollWheelZoom: false,
+    doubleClickZoom: false,
+    touchZoom: false,
+    dragging: false,
+    keyboard: false
+  });
+
+  // Capa base de OpenStreetMap clásica
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+  }).addTo(map);
+
+  let currentLayer = null;
   let index = 0;
 
-  function render(i) {
+  async function render(i) {
     const route = ROUTES[i];
 
-    svgWrapEl.classList.remove("rs-visible");
+    titleEl.textContent = route.name;
+    subtitleEl.textContent = route.subtitle;
+    countEl.textContent = \`Ruta \${i + 1} de \${ROUTES.length}\`;
 
-    setTimeout(() => {
-      titleEl.textContent = route.name;
-      subtitleEl.textContent = route.subtitle;
-      countEl.textContent = `Ruta ${i + 1} de ${ROUTES.length}`;
+    try {
+      const response = await fetch(route.file);
+      if (!response.ok) throw new Error(\`HTTP error! status: \${response.status}\`);
+      const geojsonData = await response.json();
 
-      svgEl.innerHTML = `
-        <path class="rs-line" d="${route.path}" />
-        <circle class="rs-dot-start" cx="${route.start[0]}" cy="${route.start[1]}" r="6" />
-        <circle class="rs-dot-end" cx="${route.end[0]}" cy="${route.end[1]}" r="6" />
-      `;
+      if (currentLayer) {
+        map.removeLayer(currentLayer);
+      }
 
-      svgWrapEl.classList.add("rs-visible");
-    }, 300); // espera a que termine el fade-out antes de cambiar contenido
+      currentLayer = L.geoJSON(geojsonData, {
+        style: function (feature) {
+          return {
+            color: route.color || "#ff7a00",
+            weight: 5,
+            opacity: 0.8
+          };
+        }
+      }).addTo(map);
+
+      // Centrar y ajustar el zoom dinámicamente al tamaño de la ruta
+      map.fitBounds(currentLayer.getBounds(), { padding: [50, 50], maxZoom: 16 });
+
+    } catch (error) {
+      console.error("Error al cargar GeoJSON:", route.file, error);
+    }
   }
 
+  // Cargar primera ruta
   render(index);
 
+  // Cambiar de ruta según el intervalo
   setInterval(() => {
     index = (index + 1) % ROUTES.length;
     render(index);
