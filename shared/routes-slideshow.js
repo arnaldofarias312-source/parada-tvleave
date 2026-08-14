@@ -36,12 +36,12 @@ export function initRoutesSlideshow(container, { intervalMs = 7000 } = {}) {
         z-index: 1000;
       }
       .rs-title {
-        font-size: 1.4vw;
+        font-size: 1.1vw;
         font-weight: 700;
         margin: 0;
       }
       .rs-subtitle {
-        font-size: 1vw;
+        font-size: 0.85vw;
         color: #555;
         margin: 0.3em 0 0;
       }
@@ -86,9 +86,10 @@ export function initRoutesSlideshow(container, { intervalMs = 7000 } = {}) {
     keyboard: false
   });
 
-  // Capa base de OpenStreetMap clásica
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  // Capa base limpia (CartoDB Positron) en lugar de OSM estándar que tiene mucho ruido
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     maxZoom: 19,
+    attribution: ''
   }).addTo(map);
 
   let currentLayer = null;
@@ -120,8 +121,8 @@ export function initRoutesSlideshow(container, { intervalMs = 7000 } = {}) {
         }
       }).addTo(map);
 
-      // Centrar y ajustar el zoom dinámicamente al tamaño de la ruta
-      map.fitBounds(currentLayer.getBounds(), { padding: [50, 50], maxZoom: 16 });
+      // Centrar y acercarse más a la ruta (maxZoom 18 y padding menor)
+      map.fitBounds(currentLayer.getBounds(), { padding: [20, 20], maxZoom: 18 });
 
     } catch (error) {
       console.error("Error al cargar GeoJSON:", route.file, error);
