@@ -40,11 +40,6 @@ export function initRoutesSlideshow(container, { intervalMs = 7000 } = {}) {
         font-weight: 700;
         margin: 0;
       }
-      .rs-subtitle {
-        font-size: 0.85vw;
-        color: #555;
-        margin: 0.3em 0 0;
-      }
       .rs-count {
         position: absolute;
         bottom: 20px;
@@ -65,14 +60,12 @@ export function initRoutesSlideshow(container, { intervalMs = 7000 } = {}) {
       <div id="rs-map" class="rs-map-wrap rs-visible"></div>
       <div class="rs-header-overlay">
         <p class="rs-title" id="rs-title"></p>
-        <p class="rs-subtitle" id="rs-subtitle"></p>
       </div>
       <div class="rs-count" id="rs-count"></div>
     </div>
   `;
 
   const titleEl = container.querySelector("#rs-title");
-  const subtitleEl = container.querySelector("#rs-subtitle");
   const countEl = container.querySelector("#rs-count");
   const mapEl = container.querySelector("#rs-map");
 
@@ -99,7 +92,6 @@ export function initRoutesSlideshow(container, { intervalMs = 7000 } = {}) {
     const route = ROUTES[i];
 
     titleEl.textContent = route.name;
-    subtitleEl.textContent = route.subtitle;
     countEl.textContent = `Ruta ${i + 1} de ${ROUTES.length}`;
 
     try {
