@@ -99,11 +99,11 @@ export function initRoutesSlideshow(container, { intervalMs = 7000 } = {}) {
 
     titleEl.textContent = route.name;
     subtitleEl.textContent = route.subtitle;
-    countEl.textContent = \`Ruta \${i + 1} de \${ROUTES.length}\`;
+    countEl.textContent = `Ruta ${i + 1} de ${ROUTES.length}`;
 
     try {
       const response = await fetch(route.file);
-      if (!response.ok) throw new Error(\`HTTP error! status: \${response.status}\`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const geojsonData = await response.json();
 
       if (currentLayer) {
