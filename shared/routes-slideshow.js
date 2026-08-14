@@ -86,8 +86,8 @@ export function initRoutesSlideshow(container, { intervalMs = 7000 } = {}) {
     keyboard: false
   });
 
-  // Capa base limpia (CartoDB Positron) en lugar de OSM estándar que tiene mucho ruido
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  // Usar OpenStreetMap estándar para que se vean todas las calles con claridad
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: ''
   }).addTo(map);
