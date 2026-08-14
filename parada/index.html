@@ -47,11 +47,11 @@
       grid-area: top-der;
     }
 
-    .cell-video {
+    .cell-slide {
       grid-area: video;
     }
 
-    .cell-bot-der {
+    .cell-video {
       grid-area: bot-der;
     }
 
@@ -77,15 +77,18 @@
       <iframe src="https://mapa-chi-ashy.vercel.app/" title="BusTrack Realtime" allowfullscreen></iframe>
     </div>
     <div class="cell cell-top-der">En proceso</div>
+    <div class="cell cell-slide">
+      <div id="rutas-slide" style="width: 100%; height: 100%;"></div>
+    </div>
     <div class="cell cell-video">
       <video id="ad" preload="auto" muted autoplay loop playsinline></video>
     </div>
-    <div class="cell cell-bot-der">En proceso</div>
   </div>
 
   <script type="module">
     import { VIDEO_URL, T0 } from "../shared/config.js";
     import { initSync } from "../shared/sync.js";
+    import { initRoutesSlideshow } from "../shared/routes-slideshow.js";
 
     const video = document.getElementById("ad");
     video.src = VIDEO_URL;
@@ -98,6 +101,8 @@
     });
 
     initSync(video, T0);
+
+    initRoutesSlideshow(document.getElementById("rutas-slide"), { intervalMs: 4000 });
   </script>
 </body>
 
