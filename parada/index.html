@@ -33,7 +33,9 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid #222;
+      border: none;
+      margin: 0;
+      padding: 0;
       overflow: hidden;
       color: #666;
       font-size: 2vw;
@@ -43,18 +45,27 @@
     .cell-izq {
       grid-area: izq;
       padding: 0;
+      margin: 0;
+      border: none;
     }
 
     .cell-top-der {
       grid-area: top-der;
+      border: 1px solid #222;
     }
 
     .cell-slide {
       grid-area: video;
+      padding: 0;
+      margin: 0;
+      border: none;
     }
 
     .cell-video {
       grid-area: bot-der;
+      padding: 0;
+      margin: 0;
+      border: none;
     }
 
     .cell-izq iframe {
@@ -95,12 +106,8 @@
     const video = document.getElementById("ad");
     video.src = VIDEO_URL;
 
-    // Vertical (grabado con teléfono) → barras negras a los lados.
-    // Horizontal → llena todo el cuadrante.
-    video.addEventListener("loadedmetadata", () => {
-      const portrait = video.videoHeight > video.videoWidth;
-      video.style.objectFit = portrait ? "contain" : "cover";
-    });
+    // Llenar todo el cuadrante sin barras negras
+    video.style.objectFit = "cover";
 
     initSync(video, T0);
 
