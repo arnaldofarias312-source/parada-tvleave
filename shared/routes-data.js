@@ -15,7 +15,7 @@ export const ROUTES = [
     name: "Guaya - Muco",
     subtitle: "Mercado → Muco",
     file: "../shared/geojson/Asociación Civil Unión Conductores Propietarios Guaya – Muco (MERCADO - MUCO).geojson",
-    color: "#475569"
+    color: "#FF66CC"
   },
   {
     name: "Canchunchú - 1° de Mayo",
@@ -51,7 +51,7 @@ export const ROUTES = [
     name: "Guaya - Muco",
     subtitle: "Muco → Mercado",
     file: "../shared/geojson/LINEA GUAYA-MUCO (MUCO - MERCADO).geojson",
-    color: "#475569"
+    color: "#FF66CC"
   },
   {
     name: "San Martín - Molinos",
@@ -81,13 +81,13 @@ export const ROUTES = [
     name: "24 de Julio - Charallave",
     subtitle: "→ Centro",
     file: "../shared/geojson/Unión Conductores 24 de Julio Charallave(CENTRO).geojson",
-    color: "#1E3A8A"
+    color: "#0000FF"
   },
   {
     name: "24 de Julio - Charallave",
     subtitle: "→ Mercado",
     file: "../shared/geojson/Unión Conductores 24 de Julio Charallave(MERCADO).geojson",
-    color: "#1E3A8A"
+    color: "#0000FF"
   },
   {
     name: "Guayacán de las Flores",
