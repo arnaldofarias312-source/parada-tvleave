@@ -3,7 +3,7 @@
 // Pega aquí la URL pública que copiaste de Supabase Storage.
 // Storage > tu bucket > tu archivo > "Copy URL"
 export const VIDEO_URL =
-  "https://yuwbwbfdxlegdocjtkkm.supabase.co/storage/v1/object/public/media-parada/exte.mp4";
+  "https://sfwlrpwamioiazmqfpmp.supabase.co/storage/v1/object/public/media-parada/exte.mp4";
 
 // Punto de referencia para el cálculo de sincronización.
 // No hace falta tocar esto: es el epoch de Unix (1 enero 1970),
