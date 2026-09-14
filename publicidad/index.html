@@ -39,5 +39,12 @@
 
     initSync(video, T0);
   </script>
+
+  <!-- Registro del Service Worker para funcionamiento offline -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  </script>
 </body>
 </html>

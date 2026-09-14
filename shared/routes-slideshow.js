@@ -79,54 +79,78 @@ export function initRoutesSlideshow(container, { intervalMs = 7000 } = {}) {
     keyboard: false
   });
 
-  // Usar OpenStreetMap estándar para que se vean todas las calles con claridad
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  // Usar OpenStreetMap estándar — el SW cachea los tiles tras la primera carga
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
-    attribution: ''
+    attribution: ""
   }).addTo(map);
 
   let currentLayer = null;
   let index = 0;
 
+  // ─── CACHÉ EN MEMORIA ────────────────────────────────────────────────────
+  // Precargamos todos los GeoJSON al arrancar. A partir de ese momento,
+  // el slideshow ya no necesita red aunque el internet se corte.
+  const geojsonCache = new Array(ROUTES.length).fill(null);
+
+  async function preloadAll() {
+    const promises = ROUTES.map(async (route, i) => {
+      try {
+        const res = await fetch(route.file);
+        if (res.ok) geojsonCache[i] = await res.json();
+      } catch {
+        // Si falla la precarga, se intentará de nuevo al renderizar esa ruta
+      }
+    });
+    await Promise.allSettled(promises);
+  }
+
+  async function getGeojson(i) {
+    // Si ya está en memoria, úsalo directamente (no toca la red)
+    if (geojsonCache[i]) return geojsonCache[i];
+    // Si no (ej. falló la precarga), intenta de nuevo
+    const res = await fetch(ROUTES[i].file);
+    if (res.ok) {
+      geojsonCache[i] = await res.json();
+      return geojsonCache[i];
+    }
+    throw new Error(`No se pudo cargar ruta ${i}`);
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   async function render(i) {
     const route = ROUTES[i];
-
     titleEl.textContent = route.name;
     countEl.textContent = `Ruta ${i + 1} de ${ROUTES.length}`;
 
     try {
-      const response = await fetch(route.file);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const geojsonData = await response.json();
+      const geojsonData = await getGeojson(i);
 
       if (currentLayer) {
         map.removeLayer(currentLayer);
       }
 
       currentLayer = L.geoJSON(geojsonData, {
-        style: function (feature) {
-          return {
-            color: route.color || "#ff7a00",
-            weight: 5,
-            opacity: 0.8
-          };
-        }
+        style: () => ({
+          color: route.color || "#ff7a00",
+          weight: 5,
+          opacity: 0.8
+        })
       }).addTo(map);
 
-      // Centrar y acercarse más a la ruta (maxZoom 18 y padding menor)
       map.fitBounds(currentLayer.getBounds(), { padding: [20, 20], maxZoom: 18 });
 
     } catch (error) {
-      console.error("Error al cargar GeoJSON:", route.file, error);
+      console.warn("Ruta no disponible:", route.file, error);
     }
   }
 
-  // Cargar primera ruta
-  render(index);
-
-  // Cambiar de ruta según el intervalo
-  setInterval(() => {
-    index = (index + 1) % ROUTES.length;
+  // Inicia: primero precarga todo, luego arranca el slideshow
+  preloadAll().then(() => {
     render(index);
-  }, intervalMs);
+    setInterval(() => {
+      index = (index + 1) % ROUTES.length;
+      render(index);
+    }, intervalMs);
+  });
 }

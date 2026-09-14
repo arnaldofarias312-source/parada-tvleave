@@ -101,7 +101,7 @@
   <script type="module">
     import { VIDEO_URL, T0 } from "../shared/config.js";
     import { initSync } from "../shared/sync.js";
-    import { initRoutesSlideshow } from "../shared/routes-slideshow.js?v=3";
+    import { initRoutesSlideshow } from "../shared/routes-slideshow.js";
 
     const video = document.getElementById("ad");
     video.src = VIDEO_URL;
@@ -112,6 +112,13 @@
     initSync(video, T0);
 
     initRoutesSlideshow(document.getElementById("rutas-slide"), { intervalMs: 7000 });
+  </script>
+
+  <!-- Registro del Service Worker para funcionamiento offline -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
   </script>
 </body>
 
