@@ -6,8 +6,8 @@ const CACHE_NAME = "parada-tv-v1";
 
 // Archivos estáticos del proyecto que se cachean al instalar el SW
 const STATIC_ASSETS = [
-  "/parada/",
-  "/parada/index.html",
+  "/panel/",
+  "/panel/index.html",
   "/publicidad/",
   "/publicidad/index.html",
   "/shared/config.js",
