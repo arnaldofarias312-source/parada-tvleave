@@ -69,14 +69,17 @@ export function initRoutesSlideshow(container, { intervalMs = 7000 } = {}) {
   const countEl = container.querySelector("#rs-count");
   const mapEl = container.querySelector("#rs-map");
 
-  // Iniciar Leaflet
+  // Iniciar Leaflet optimizado para Smart TV (sin animaciones pesadas que saturen la CPU)
   const map = L.map(mapEl, {
     zoomControl: false,
     scrollWheelZoom: false,
     doubleClickZoom: false,
     touchZoom: false,
     dragging: false,
-    keyboard: false
+    keyboard: false,
+    zoomAnimation: false,
+    fadeAnimation: false,
+    markerZoomAnimation: false
   });
 
   // Usar OpenStreetMap estándar — el SW cachea los tiles tras la primera carga
@@ -138,7 +141,8 @@ export function initRoutesSlideshow(container, { intervalMs = 7000 } = {}) {
         })
       }).addTo(map);
 
-      map.fitBounds(currentLayer.getBounds(), { padding: [20, 20], maxZoom: 18 });
+      // Salto instantáneo sin animación para no competir con el decodificador de video
+      map.fitBounds(currentLayer.getBounds(), { padding: [20, 20], maxZoom: 18, animate: false });
 
     } catch (error) {
       console.warn("Ruta no disponible:", route.file, error);

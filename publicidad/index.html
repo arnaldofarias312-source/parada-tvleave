@@ -24,8 +24,7 @@
   <video id="ad" preload="auto" muted autoplay loop playsinline></video>
 
   <script type="module">
-    import { VIDEO_URL, T0 } from "../shared/config.js";
-    import { initSync } from "../shared/sync.js";
+    import { VIDEO_URL } from "../shared/config.js";
 
     const video = document.getElementById("ad");
     video.src = VIDEO_URL;
@@ -37,7 +36,16 @@
       video.style.objectFit = portrait ? "contain" : "cover";
     });
 
-    initSync(video, T0);
+    const startPlayback = () => {
+      if (video.paused) {
+        video.play().catch(() => {});
+      }
+    };
+    startPlayback();
+    video.addEventListener("canplay", startPlayback);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) startPlayback();
+    });
   </script>
 
   <!-- Registro del Service Worker para funcionamiento offline -->

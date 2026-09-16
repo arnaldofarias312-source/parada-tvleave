@@ -66,6 +66,9 @@
       padding: 0;
       margin: 0;
       border: none;
+      background: #000;
+      transform: translateZ(0);
+      will-change: transform;
     }
 
     .cell-izq iframe {
@@ -73,6 +76,7 @@
       height: 100%;
       border: none;
       display: block;
+      transform: translateZ(0);
     }
 
     video {
@@ -80,6 +84,8 @@
       height: 100%;
       object-fit: cover;
       display: block;
+      transform: translateZ(0);
+      will-change: transform;
     }
   </style>
 </head>
@@ -99,17 +105,24 @@
   </div>
 
   <script type="module">
-    import { VIDEO_URL, T0 } from "../shared/config.js";
-    import { initSync } from "../shared/sync.js";
+    import { VIDEO_URL } from "../shared/config.js";
     import { initRoutesSlideshow } from "../shared/routes-slideshow.js";
 
     const video = document.getElementById("ad");
     video.src = VIDEO_URL;
-
-    // Llenar todo el cuadrante sin barras negras
     video.style.objectFit = "cover";
 
-    initSync(video, T0);
+    // Reproducción nativa en bucle sin pausas ni saltos de sincronización
+    const startPlayback = () => {
+      if (video.paused) {
+        video.play().catch(() => {});
+      }
+    };
+    startPlayback();
+    video.addEventListener("canplay", startPlayback);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) startPlayback();
+    });
 
     initRoutesSlideshow(document.getElementById("rutas-slide"), { intervalMs: 7000 });
   </script>
