@@ -8,6 +8,10 @@ export const VIDEO_URL_PUBLICIDAD =
 export const VIDEO_URL_PANEL =
   "https://sfwlrpwamioiazmqfpmp.supabase.co/storage/v1/object/public/media-parada/exte_panel.mp4";
 
+// Audio de fondo para el panel de la parada (en bucle continuo)
+export const AUDIO_URL_FONDO =
+  "https://sfwlrpwamioiazmqfpmp.supabase.co/storage/v1/object/public/media-parada/fondo.mp3";
+
 // Compatibilidad general
 export const VIDEO_URL = VIDEO_URL_PUBLICIDAD;
 

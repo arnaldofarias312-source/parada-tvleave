@@ -2,7 +2,7 @@
 // Cachea todos los archivos estáticos y el video para que el sistema
 // funcione sin internet después de la primera carga.
 
-const CACHE_NAME = "parada-tv-v1";
+const CACHE_NAME = "parada-tv-v2";
 
 // Archivos estáticos del proyecto que se cachean al instalar el SW
 const STATIC_ASSETS = [
@@ -72,8 +72,11 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // El video de Supabase → Cache-first
-  if (url.hostname.includes("supabase.co") && url.pathname.endsWith(".mp4")) {
+  // El video y audio de Supabase → Cache-first
+  if (
+    url.hostname.includes("supabase.co") &&
+    (url.pathname.endsWith(".mp4") || url.pathname.endsWith(".mp3"))
+  ) {
     event.respondWith(cacheFirstStrategy(event.request));
     return;
   }
