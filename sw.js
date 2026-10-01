@@ -2,7 +2,7 @@
 // Cachea todos los archivos estáticos y el video para que el sistema
 // funcione sin internet después de la primera carga.
 
-const CACHE_NAME = "parada-tv-v2";
+const CACHE_NAME = "parada-tv-v3";
 
 // Archivos estáticos del proyecto que se cachean al instalar el SW
 const STATIC_ASSETS = [
