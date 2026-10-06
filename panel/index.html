@@ -54,21 +54,21 @@
       border: 1px solid #222;
     }
 
-    .cell-slide {
-      grid-area: video;
-      padding: 0;
-      margin: 0;
-      border: none;
-    }
-
     .cell-video {
-      grid-area: bot-der;
+      grid-area: video;
       padding: 0;
       margin: 0;
       border: none;
       background: #000;
       transform: translateZ(0);
       will-change: transform;
+    }
+
+    .cell-slide {
+      grid-area: bot-der;
+      padding: 0;
+      margin: 0;
+      border: none;
     }
 
     .cell-izq iframe {
@@ -115,11 +115,11 @@
     allowfullscreen>
   </iframe>
 </div>
-    <div class="cell cell-slide">
-      <div id="rutas-slide" style="width: 100%; height: 100%;"></div>
-    </div>
     <div class="cell cell-video">
       <video id="ad" preload="auto" muted autoplay loop playsinline></video>
+    </div>
+    <div class="cell cell-slide">
+      <div id="rutas-slide" style="width: 100%; height: 100%;"></div>
     </div>
   </div>
 
