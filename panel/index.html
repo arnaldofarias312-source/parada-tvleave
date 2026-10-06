@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Panel</title>
+  <title>Televisor 1 - Panel</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <style>
@@ -87,6 +87,18 @@
       transform: translateZ(0);
       will-change: transform;
     }
+
+    #streamFrame {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      border: none;
+      background: #000;
+      display: none;
+      z-index: 9999;
+    }
   </style>
 </head>
 
@@ -95,7 +107,14 @@
     <div class="cell cell-izq">
       <iframe src="https://mapahospital-ida.vercel.app/" title="BusTrack Realtime" allowfullscreen></iframe>
     </div>
-    <div class="cell cell-top-der">En proceso</div>
+    <div class="cell cell-top-der">
+  <iframe
+    src="http://localhost:8889/camara"
+    style="width:100%; height:100%; border:none; display:block;"
+    allow="autoplay; fullscreen"
+    allowfullscreen>
+  </iframe>
+</div>
     <div class="cell cell-slide">
       <div id="rutas-slide" style="width: 100%; height: 100%;"></div>
     </div>
@@ -104,57 +123,194 @@
     </div>
   </div>
 
-  <!-- Audio de fondo continuo -->
+  <iframe
+    id="streamFrame"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+    referrerpolicy="strict-origin-when-cross-origin"
+    allowfullscreen>
+  </iframe>
+
   <audio id="bg-audio" preload="auto" loop></audio>
 
   <script type="module">
     import { VIDEO_URL_PANEL, AUDIO_URL_FONDO } from "../shared/config.js";
     import { initRoutesSlideshow } from "../shared/routes-slideshow.js";
+    import { listenControlCommands, CONTROL_ACTIONS } from "../shared/controller-sync.js";
 
-    const video = document.getElementById("ad");
+    let video = document.getElementById("ad");
+    let audio = document.getElementById("bg-audio");
+    const streamFrame = document.getElementById("streamFrame");
+
+    const radioPlayer = new Audio();
+    radioPlayer.crossOrigin = "anonymous";
+    radioPlayer.preload = "auto";
+
+    // ─── ESTADO GLOBAL ───────────────────────────────────────────────
+    let modoActual = "normal";
+
+    // ─── VIDEO PANEL ─────────────────────────────────────────────────
     video.src = VIDEO_URL_PANEL;
     video.style.objectFit = "cover";
 
-    // Reproducción nativa en bucle sin pausas ni saltos de sincronización
-    const startPlayback = () => {
-      if (video.paused) {
-        video.play().catch(() => {});
-      }
-    };
-    startPlayback();
-    video.addEventListener("canplay", startPlayback);
+    function startVideoPanel() {
+      if (video.paused) video.play().catch(() => {});
+    }
+    startVideoPanel();
+    video.addEventListener("canplay", startVideoPanel);
 
-    // Reproducción del audio de fondo
-    const audio = document.getElementById("bg-audio");
-    audio.src = AUDIO_URL_FONDO;
-    const startAudio = () => {
-      if (audio.paused) {
+    // ─── AUDIO DE FONDO ──────────────────────────────────────────────
+    function asignarAudioFondo() {
+      if (!audio.src || audio.src === "" || audio.src === window.location.href) {
+        audio.src = AUDIO_URL_FONDO;
+      }
+    }
+
+    function iniciarAudioFondo() {
+      if (modoActual !== "normal") return;
+      asignarAudioFondo();
+      audio.muted = false;
+      audio.volume = 1;
+      if (audio.paused) audio.play().catch(() => {});
+    }
+
+    function detenerAudioFondo() {
+      try {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.muted = true;
+        audio.volume = 0;
+        audio.removeAttribute("src");
+        audio.load();
+      } catch (e) {
+        console.warn("Error al detener audio de fondo:", e);
+      }
+    }
+
+    iniciarAudioFondo();
+
+    audio.addEventListener("canplay", () => {
+      if (modoActual === "normal" && audio.paused) {
         audio.play().catch(() => {});
       }
-    };
-    startAudio();
-    audio.addEventListener("canplay", startAudio);
+    });
 
-    // Si el navegador del Smart TV restringe el sonido automático inicial,
-    // se activa inmediatamente con la primera interacción
+    // ─── RECARGA CON CACHE-BUSTING ───────────────────────────────────
+    function reloadWithCacheBust() {
+      const url = new URL(window.location.href);
+      url.searchParams.set("_r", Date.now().toString());
+      window.location.replace(url.toString());
+    }
+
+    // ─── FORMATEAR URL DE STREAM ─────────────────────────────────────
+    function formatStreamUrl(url) {
+      if (!url) return "";
+      let videoId = "";
+      if (url.includes("v=")) videoId = url.split("v=")[1]?.split("&")[0];
+      else if (url.includes("youtu.be/")) videoId = url.split("youtu.be/")[1]?.split("?")[0];
+      else if (url.includes("youtube.com/live/")) videoId = url.split("youtube.com/live/")[1]?.split("?")[0];
+      else if (url.includes("embed/")) videoId = url.split("embed/")[1]?.split("?")[0];
+
+      if (videoId) {
+        const origin = encodeURIComponent(window.location.origin);
+        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&enablejsapi=1&origin=${origin}`;
+      }
+      return url;
+    }
+
+    // ─── FUNCIONES DE CAMBIO DE MODO ─────────────────────────────────
+    function entrarModoNormal() {
+      modoActual = "normal";
+      radioPlayer.pause();
+      radioPlayer.removeAttribute("src");
+      radioPlayer.load();
+      streamFrame.src = "";
+      streamFrame.style.display = "none";
+      video.muted = false;
+      video.play().catch(() => {});
+      iniciarAudioFondo();
+    }
+
+    // 🔇 RADIO: mutear TODO excepto la radio
+    function entrarModoRadio(url) {
+      modoActual = "radio";
+      // Silenciar TODO lo local
+      detenerAudioFondo();          // audio de fondo: pausa + src vacío
+      video.muted = true;           // video del panel muteado
+      streamFrame.src = "";         // stream detenido
+      streamFrame.style.display = "none";
+      // Solo suena la radio
+      radioPlayer.src = url;
+      radioPlayer.muted = false;
+      radioPlayer.volume = 1;
+      radioPlayer.play().catch((e) => console.warn("Error al reproducir radio:", e));
+    }
+
+    function entrarModoStream(url, target) {
+      modoActual = "stream";
+      detenerAudioFondo();
+      video.muted = true;
+      radioPlayer.pause();
+      radioPlayer.removeAttribute("src");
+      radioPlayer.load();
+      if (target === "panel" || target === "both") {
+        streamFrame.src = formatStreamUrl(url);
+        streamFrame.style.display = "block";
+      } else {
+        streamFrame.src = "";
+        streamFrame.style.display = "none";
+      }
+    }
+
+    // ─────────────────────── ESCUCHAR COMANDOS ───────────────────────────────────
+    listenControlCommands((action, payload) => {
+      console.log("Panel recibió comando:", action, payload, "| modo:", modoActual);
+
+      if (action === CONTROL_ACTIONS.SET_RADIO) {
+        entrarModoRadio(payload.url);
+      }
+      else if (action === CONTROL_ACTIONS.STOP_RADIO) {
+        entrarModoNormal();
+      }
+      else if (action === CONTROL_ACTIONS.SET_STREAM) {
+        entrarModoStream(payload.url, payload.target);
+      }
+      else if (action === CONTROL_ACTIONS.STOP_STREAM) {
+        entrarModoNormal();
+      }
+      else if (action === CONTROL_ACTIONS.RESET_ALL) {
+        entrarModoNormal();
+      }
+      else if (action === CONTROL_ACTIONS.RELOAD_SCREEN) {
+        if (!payload || payload.target === "panel" || payload.target === "both") {
+          reloadWithCacheBust();
+        }
+      }
+    });
+
+    // ─── DESBLOQUEO DE AUDIO (Smart TV) ──────────────────────────────
     const unlockAudio = () => {
-      startAudio();
+      if (modoActual === "normal") iniciarAudioFondo();
+      if (video.paused && modoActual !== "stream") video.play().catch(() => {});
     };
     window.addEventListener("click", unlockAudio, { once: true });
     window.addEventListener("touchstart", unlockAudio, { once: true });
     window.addEventListener("keydown", unlockAudio, { once: true });
 
     document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) {
-        startPlayback();
-        startAudio();
+      if (document.hidden) return;
+      if (modoActual === "normal") {
+        iniciarAudioFondo();
+        startVideoPanel();
+      } else if (modoActual === "radio") {
+        if (radioPlayer.paused && radioPlayer.src) {
+          radioPlayer.play().catch(() => {});
+        }
       }
     });
 
     initRoutesSlideshow(document.getElementById("rutas-slide"), { intervalMs: 7000 });
   </script>
 
-  <!-- Registro del Service Worker para funcionamiento offline -->
   <script>
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});

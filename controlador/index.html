@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controlador de Parada Inteligente</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #38bdf8;
+      text-align: center;
+      margin-bottom: 25px;
+      font-size: 1.8rem;
+    }
+    .card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 1px solid #334155;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+    .card h2 {
+      margin-top: 0;
+      color: #f59e0b;
+      font-size: 1.25rem;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #cbd5e1;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 6px;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: #f8fafc;
+      font-size: 1rem;
+      outline: none;
+    }
+    input:focus, select:focus {
+      border-color: #38bdf8;
+    }
+    button {
+      background: #2563eb;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      margin-top: 15px;
+      transition: background 0.2s ease;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    .btn-danger {
+      background: #dc2626;
+    }
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 600px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .hint {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎛️ Control de Medios - Parada Inteligente</h1>
+
+    <!-- Control de Radio FM / Online -->
+    <div class="card">
+      <h2>📻 Radio en Vivo (Audio)</h2>
+      
+      <label for="radioSelect">Seleccionar Emisora Preconfigurada:</label>
+      <select id="radioSelect">
+        <option value="">-- Seleccionar una emisora --</option>
+        <option value="https://stream.zeno.fm/1p9tu7b5rm0uv" data-freq="92.5 FM">📻 Son Carupanero — 92.5 FM</option>
+        <option value="https://streaming.hostpannel.lat/stream8795" data-freq="96.1 FM">📻 Sonica — 96.1 FM</option>
+        <option value="https://app2.radionlin.com/listen/carnaval/radio.mp3" data-freq="99.3 FM">📻 Carnaval — 99.3 FM</option>
+        <option value="https://streamingned.com:7112/stream" data-freq="102.7 FM">📻 Costera — 102.7 FM</option>
+        <option value="https://stream.zenolive.com/tz3pabr3998uv" data-freq="106.5 FM">📻 Mística — 106.5 FM</option>
+        <!-- 🔽 AÑADE AQUÍ LAS EMISORAS REALES DE CARÚPANO 🔽 -->
+        <!-- <option value="URL_REAL_AQUI" data-freq="XX.X FM">📻 Nombre de la emisora — XX.X FM</option> -->
+      </select>
+
+      <label for="radioUrl">URL de Radio (se llena al elegir una emisora):</label>
+      <input type="text" id="radioUrl" placeholder="https://stream.ejemplo.com/radio.mp3">
+      <p class="hint">Puedes elegir una emisora de la lista o pegar una URL manualmente.</p>
+
+      <div class="grid">
+        <button id="btnPlayRadio">▶ Sintonizar Radio</button>
+        <button id="btnStopRadio" class="btn-danger">⏹ Apagar Radio</button>
+      </div>
+    </div>
+
+    <!-- Control de Video Streaming -->
+    <div class="card">
+      <h2>📺 Streaming de Video en Vivo</h2>
+      
+      <label for="streamUrl">URL de Transmisión (YouTube Embed, HLS .m3u8 o Video directo):</label>
+      <input type="text" id="streamUrl" placeholder="https://www.youtube.com/embed/LIVE_ID o http://.../live.m3u8">
+
+      <label for="streamTarget">Enviar Transmisión a:</label>
+      <select id="streamTarget">
+        <option value="publicidad">Televisor 2 (Pantalla Publicitaria)</option>
+      </select>
+
+      <div class="grid">
+        <button id="btnPlayStream">🎬 Iniciar Streaming</button>
+        <button id="btnStopStream" class="btn-danger">⏹ Detener Streaming</button>
+      </div>
+    </div>
+
+    <!-- Restablecer Todo -->
+    <div class="card">
+      <h2>🔄 Estado de Pantallas</h2>
+      <button id="btnReset" class="btn-danger">Restablecer Pantallas a Modo Normal (Publicidad / Rutas)</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { sendControlCommand, CONTROL_ACTIONS } from "../shared/controller-sync.js";
+
+    const radioSelect = document.getElementById("radioSelect");
+    const radioUrl = document.getElementById("radioUrl");
+    const streamUrl = document.getElementById("streamUrl");
+    const streamTarget = document.getElementById("streamTarget");
+
+    // Al elegir una emisora, llenamos automáticamente el input con su URL
+    radioSelect.addEventListener("change", () => {
+      const url = radioSelect.value;
+      if (url) {
+        radioUrl.value = url;
+      }
+    });
+
+    // ─── RADIO ───────────────────────────────────────────────────────
+    document.getElementById("btnPlayRadio").addEventListener("click", () => {
+      const url = radioUrl.value.trim() || radioSelect.value;
+      if (!url) {
+        alert("Por favor selecciona una emisora o ingresa una URL de radio.");
+        return;
+      }
+      // SET_RADIO hace que el panel y la publicidad muten TODO excepto la radio
+      sendControlCommand(CONTROL_ACTIONS.SET_RADIO, { url });
+    });
+
+    // Apagar Radio: detiene y recarga las pantallas
+    document.getElementById("btnStopRadio").addEventListener("click", () => {
+      sendControlCommand(CONTROL_ACTIONS.STOP_RADIO);
+      sendControlCommand(CONTROL_ACTIONS.RELOAD_SCREEN, { target: "both" });
+    });
+
+    // ─── STREAMING ───────────────────────────────────────────────────
+    document.getElementById("btnPlayStream").addEventListener("click", () => {
+      const url = streamUrl.value.trim();
+      const target = streamTarget.value;
+      if (!url) {
+        alert("Por favor ingresa una URL de streaming.");
+        return;
+      }
+      sendControlCommand(CONTROL_ACTIONS.SET_STREAM, { url, target });
+    });
+
+    // Detener Streaming: detiene y recarga las pantallas afectadas
+    document.getElementById("btnStopStream").addEventListener("click", () => {
+      const target = streamTarget.value;
+      sendControlCommand(CONTROL_ACTIONS.STOP_STREAM);
+      sendControlCommand(CONTROL_ACTIONS.RELOAD_SCREEN, { target });
+    });
+
+    // ─── RESET ───────────────────────────────────────────────────────
+    document.getElementById("btnReset").addEventListener("click", () => {
+      sendControlCommand(CONTROL_ACTIONS.RESET_ALL);
+      sendControlCommand(CONTROL_ACTIONS.RELOAD_SCREEN, { target: "both" });
+    });
+  </script>
+</body>
+</html>

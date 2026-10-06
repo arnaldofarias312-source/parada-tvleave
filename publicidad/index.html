@@ -2,57 +2,172 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Publicidad</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Televisor 2 - Publicidad</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       background: #000;
       overflow: hidden;
     }
-    video {
+
+    video, iframe {
       width: 100vw;
       height: 100vh;
+      border: none;
       object-fit: cover;
       display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    #streamFrame {
+      display: none;
+      z-index: 10;
     }
   </style>
 </head>
 <body>
+
+  <!-- Video publicitario base -->
   <video id="ad" preload="auto" muted autoplay loop playsinline></video>
+  
+  <!-- Frame para transmisión en vivo -->
+  <iframe 
+    id="streamFrame" 
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+    referrerpolicy="strict-origin-when-cross-origin"
+    allowfullscreen>
+  </iframe>
+
+  <!-- Reproductor de Radio -->
+  <audio id="radioPlayer" style="display:none;"></audio>
 
   <script type="module">
     import { VIDEO_URL } from "../shared/config.js";
+    import { listenControlCommands, CONTROL_ACTIONS } from "../shared/controller-sync.js";
 
     const video = document.getElementById("ad");
-    video.src = VIDEO_URL;
+    const streamFrame = document.getElementById("streamFrame");
+    const radioPlayer = document.getElementById("radioPlayer");
 
-    // Vertical (grabado con teléfono) → barras negras a los lados.
-    // Horizontal → llena toda la pantalla.
+    // ─── ESTADO GLOBAL ───────────────────────────────────────────────
+    // "normal" | "radio" | "stream"
+    let modoActual = "normal";
+
+    // ─── CARGA DEL VIDEO PUBLICITARIO ────────────────────────────────
+    function loadAdVideo() {
+      if (!video.src || video.src === "" || video.src === window.location.href) {
+        video.src = VIDEO_URL;
+        video.load();
+      }
+    }
+    loadAdVideo();
+
     video.addEventListener("loadedmetadata", () => {
       const portrait = video.videoHeight > video.videoWidth;
       video.style.objectFit = portrait ? "contain" : "cover";
     });
 
-    const startPlayback = () => {
-      if (video.paused) {
-        video.play().catch(() => {});
-      }
-    };
-    startPlayback();
-    video.addEventListener("canplay", startPlayback);
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) startPlayback();
-    });
-  </script>
-
-  <!-- Registro del Service Worker para funcionamiento offline -->
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    function ensureVideoPlaying() {
+      if (modoActual !== "normal") return;
+      if (streamFrame.src) return;
+      if (video.paused) video.play().catch(() => {});
     }
+
+    video.addEventListener("canplay", ensureVideoPlaying);
+    video.addEventListener("loadeddata", ensureVideoPlaying);
+    ensureVideoPlaying();
+    setTimeout(ensureVideoPlaying, 1000);
+    setTimeout(ensureVideoPlaying, 3000);
+
+    // ─── FORMATEAR URL DE STREAM ─────────────────────────────────────
+    function formatStreamUrl(url) {
+      if (!url) return "";
+      let videoId = "";
+      if (url.includes("v=")) videoId = url.split("v=")[1]?.split("&")[0];
+      else if (url.includes("youtu.be/")) videoId = url.split("youtu.be/")[1]?.split("?")[0];
+      else if (url.includes("youtube.com/live/")) videoId = url.split("youtube.com/live/")[1]?.split("?")[0];
+      else if (url.includes("embed/")) videoId = url.split("embed/")[1]?.split("?")[0];
+
+      if (videoId) {
+        const origin = encodeURIComponent(window.location.origin);
+        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&enablejsapi=1&origin=${origin}`;
+      }
+      return url;
+    }
+
+    // ─── RECARGA CON CACHE-BUSTING ───────────────────────────────────
+    function reloadWithCacheBust() {
+      const url = new URL(window.location.href);
+      url.searchParams.set("_r", Date.now().toString());
+      window.location.replace(url.toString());
+    }
+
+    // ─── FUNCIONES DE CAMBIO DE MODO ─────────────────────────────────
+    function entrarModoNormal() {
+      modoActual = "normal";
+      // Detener radio
+      radioPlayer.pause();
+      radioPlayer.removeAttribute("src");
+      radioPlayer.load();
+      // Detener stream
+      streamFrame.src = "";
+      streamFrame.style.display = "none";
+      // Restaurar video publicitario
+      video.muted = false;
+      video.play().catch(() => {});
+    }
+
+
+    function entrarModoStream(url, target) {
+      modoActual = "stream";
+      // Detener radio si había
+      radioPlayer.pause();
+      radioPlayer.removeAttribute("src");
+      radioPlayer.load();
+      // Silenciar y pausar video publicitario
+      video.muted = true;
+      video.pause();
+      // Mostrar stream si va a esta pantalla
+      if (target === "publicidad" || target === "both") {
+        streamFrame.src = formatStreamUrl(url);
+        streamFrame.style.display = "block";
+      } else {
+        streamFrame.src = "";
+        streamFrame.style.display = "none";
+      }
+    }
+
+    // ─── ESCUCHAR COMANDOS ───────────────────────────────────────────
+    listenControlCommands((action, payload) => {
+      console.log("Publicidad recibió comando:", action, payload, "| modo:", modoActual);
+
+      if (action === CONTROL_ACTIONS.SET_RADIO) {
+        entrarModoRadio(payload.url);
+      }
+      else if (action === CONTROL_ACTIONS.STOP_RADIO) {
+        entrarModoNormal();
+      }
+      else if (action === CONTROL_ACTIONS.SET_STREAM) {
+        entrarModoStream(payload.url, payload.target);
+      }
+      else if (action === CONTROL_ACTIONS.STOP_STREAM) {
+        entrarModoNormal();
+      }
+      else if (action === CONTROL_ACTIONS.RESET_ALL) {
+        entrarModoNormal();
+      }
+      else if (action === CONTROL_ACTIONS.RELOAD_SCREEN) {
+        if (!payload || payload.target === "publicidad" || payload.target === "both") {
+          reloadWithCacheBust();
+        }
+      }
+    });
   </script>
 </body>
 </html>

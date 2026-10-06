@@ -2,9 +2,8 @@
 // Cachea todos los archivos estáticos y el video para que el sistema
 // funcione sin internet después de la primera carga.
 
-const CACHE_NAME = "parada-tv-v3";
+const CACHE_NAME = "parada-tv-v4";
 
-// Archivos estáticos del proyecto que se cachean al instalar el SW
 const STATIC_ASSETS = [
   "/panel/",
   "/panel/index.html",
@@ -14,6 +13,7 @@ const STATIC_ASSETS = [
   "/shared/sync.js",
   "/shared/routes-data.js",
   "/shared/routes-slideshow.js",
+  "/shared/controller-sync.js",
   "/api/time",
   // GeoJSON de las 19 rutas
   "/shared/geojson/Asociaci%C3%B3n%20Civil%20Conductores%20Guaya%20Lirio(%20mercado%20-parada%20de%20espera%20).geojson",
@@ -42,12 +42,9 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // Cachear de a uno para que un fallo no bloquee el resto
       return Promise.allSettled(
         STATIC_ASSETS.map((url) =>
-          cache.add(url).catch(() => {
-            // Si falla un recurso, se ignora silenciosamente
-          })
+          cache.add(url).catch(() => {})
         )
       );
     })
@@ -68,9 +65,14 @@ self.addEventListener("activate", (event) => {
 });
 
 // Al interceptar requests: estrategia Network-first con caída a caché
-// Para el video usamos Cache-first (es muy pesado y cambia poco)
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
+
+  // ⚠️ Si la URL trae ?_r= (recarga forzada con cache-busting),
+  // dejamos que vaya SIEMPRE a red, sin pasar por el SW.
+  if (url.searchParams.has("_r")) {
+    return;
+  }
 
   // El video y audio de Supabase → Cache-first
   if (
@@ -94,26 +96,23 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(networkFirstStrategy(event.request));
 });
 
-// Estrategia Network-first: intenta red, si falla usa caché
+// Estrategia Network-first
 async function networkFirstStrategy(request) {
   const cache = await caches.open(CACHE_NAME);
   try {
     const networkResponse = await fetch(request);
-    // Si la respuesta es válida, actualiza la caché
     if (networkResponse && networkResponse.status === 200) {
       cache.put(request, networkResponse.clone());
     }
     return networkResponse;
   } catch {
-    // Sin red: sirve desde caché
     const cached = await cache.match(request);
     if (cached) return cached;
-    // Si tampoco hay caché, retorna respuesta vacía para no romper la UI
     return new Response("", { status: 503, statusText: "Offline" });
   }
 }
 
-// Estrategia Cache-first: busca en caché, si no hay va a la red y guarda
+// Estrategia Cache-first
 async function cacheFirstStrategy(request) {
   const cache = await caches.open(CACHE_NAME);
   const cached = await cache.match(request);

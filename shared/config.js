@@ -1,4 +1,8 @@
 // ⚠️ ÚNICO ARCHIVO QUE NECESITAS EDITAR PARA EMPEZAR
+export const SUPABASE_URL = "https://sfwlrpwamioiazmqfpmp.supabase.co";
+export const SUPABASE_ANON_KEY = "sb_publishable_cuEqC1dZ27unkGPivAcV3A_a73_avUF";
+
+
 
 // Video para pantalla de publicidad (alta definición)
 export const VIDEO_URL_PUBLICIDAD =
