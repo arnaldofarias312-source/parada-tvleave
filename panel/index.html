@@ -130,7 +130,7 @@
     allowfullscreen>
   </iframe>
 
-  <audio id="bg-audio" preload="auto" loop></audio>
+  <audio id="bg-audio" preload="auto" loop src="https://sfwlrpwamioiazmqfpmp.supabase.co/storage/v1/object/public/media-parada/fondo.mp3?v=2"></audio>
 
   <script type="module">
     import { VIDEO_URL_PANEL, AUDIO_URL_FONDO } from "../shared/config.js";
@@ -159,30 +159,28 @@
     video.addEventListener("canplay", startVideoPanel);
 
     // ─── AUDIO DE FONDO ──────────────────────────────────────────────
-    function asignarAudioFondo() {
-      if (!audio.src || audio.src === "" || audio.src === window.location.href) {
-        audio.src = AUDIO_URL_FONDO;
-      }
-    }
+    audio.src = AUDIO_URL_FONDO;
+    audio.loop = true;
+    audio.muted = false;
+    audio.volume = 1;
 
     function iniciarAudioFondo() {
       if (modoActual !== "normal") return;
-      asignarAudioFondo();
+      if (!audio.src || audio.src === "" || audio.src === window.location.href) {
+        audio.src = AUDIO_URL_FONDO;
+      }
       audio.muted = false;
       audio.volume = 1;
-      if (audio.paused) audio.play().catch(() => {});
+      if (audio.paused) {
+        audio.play().catch(() => {});
+      }
     }
 
     function detenerAudioFondo() {
       try {
         audio.pause();
-        audio.currentTime = 0;
-        audio.muted = true;
-        audio.volume = 0;
-        audio.removeAttribute("src");
-        audio.load();
       } catch (e) {
-        console.warn("Error al detener audio de fondo:", e);
+        console.warn("Error al pausar audio de fondo:", e);
       }
     }
 
@@ -190,7 +188,7 @@
 
     audio.addEventListener("canplay", () => {
       if (modoActual === "normal" && audio.paused) {
-        audio.play().catch(() => {});
+        iniciarAudioFondo();
       }
     });
 
@@ -225,7 +223,7 @@
       radioPlayer.load();
       streamFrame.src = "";
       streamFrame.style.display = "none";
-      video.muted = false;
+      video.muted = true;
       video.play().catch(() => {});
       iniciarAudioFondo();
     }
