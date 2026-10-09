@@ -111,6 +111,14 @@
       video.play().catch(() => {});
     }
 
+    // ─── RECARGA CON CACHE-BUSTING ───────────────────────────────────
+    // Único lugar del sistema donde se recarga una página.
+    function reloadWithCacheBust() {
+      const url = new URL(window.location.href);
+      url.searchParams.set("_r", Date.now().toString());
+      window.location.replace(url.toString());
+    }
+
     // ─── MODOS ───────────────────────────────────────────────────────
     function entrarModoNormal() {
       modoActual = "normal";
@@ -118,7 +126,6 @@
       restaurarVideoPublicitario();
     }
 
-    // 🎬 MODO STREAM: solo en el Televisor 2
     function entrarModoStream(url) {
       modoActual = "stream";
       video.muted = true;
@@ -141,10 +148,9 @@
         entrarModoNormal();
       }
       else if (action === CONTROL_ACTIONS.RELOAD_SCREEN) {
+        // ⚡ ÚNICO TV QUE RECARGA. Solo si el target incluye "publicidad" o "both".
         if (!payload || payload.target === "publicidad" || payload.target === "both") {
-          const url = new URL(window.location.href);
-          url.searchParams.set("_r", Date.now().toString());
-          window.location.replace(url.toString());
+          reloadWithCacheBust();
         }
       }
       // SET_RADIO / STOP_RADIO se ignoran: la radio es del TV1

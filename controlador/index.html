@@ -96,7 +96,7 @@
 
       <label for="streamUrl">URL de Transmisión (YouTube, HLS .m3u8 o Video directo):</label>
       <input type="text" id="streamUrl" placeholder="https://www.youtube.com/watch?v=LIVE_ID o http://.../live.m3u8">
-      <p class="hint">El streaming solo se muestra en el <strong>Televisor 2 (Publicidad)</strong>. Al activarlo, se detiene la radio.</p>
+      <p class="hint">El streaming se muestra en el <strong>TV2</strong>. Al activarlo, se detiene la radio.</p>
 
       <div class="grid">
         <button id="btnPlayStream">🎬 Iniciar Streaming</button>
@@ -124,46 +124,52 @@
     });
 
     // ─── RADIO (Televisor 1) ────────────────────────────────────────
-    // ⚡ Al activar radio, primero detenemos cualquier stream que esté
-    //    activo. Luego encendemos la radio.
+    // Al activar radio:
+    //   1. STOP_STREAM → el TV2 vuelve a publicidad y se recarga
+    //   2. SET_RADIO   → el TV1 enciende la radio
+    //   3. RELOAD_SCREEN → SOLO el TV2 recarga la página
     document.getElementById("btnPlayRadio").addEventListener("click", () => {
       const url = radioUrl.value.trim() || radioSelect.value;
       if (!url) {
         alert("Por favor selecciona una emisora o ingresa una URL de radio.");
         return;
       }
-      // 1. Detener cualquier stream activo (exclusión global)
       sendControlCommand(CONTROL_ACTIONS.STOP_STREAM);
-      // 2. Encender radio en el Televisor 1
       sendControlCommand(CONTROL_ACTIONS.SET_RADIO, { url });
+      sendControlCommand(CONTROL_ACTIONS.RELOAD_SCREEN, { target: "publicidad" });
     });
 
+    // Apagar Radio: solo afecta al TV1. El TV2 no cambia.
     document.getElementById("btnStopRadio").addEventListener("click", () => {
       sendControlCommand(CONTROL_ACTIONS.STOP_RADIO);
     });
 
     // ─── STREAMING (Televisor 2) ────────────────────────────────────
-    // ⚡ Al activar stream, primero detenemos cualquier radio que esté
-    //    activa. Luego encendemos el stream.
+    // Al activar stream:
+    //   1. STOP_RADIO → el TV1 vuelve a modo normal
+    //   2. SET_STREAM → el TV2 muestra el stream
+    //   (No recargamos TV2 aquí porque queremos que se vea el stream)
     document.getElementById("btnPlayStream").addEventListener("click", () => {
       const url = streamUrl.value.trim();
       if (!url) {
         alert("Por favor ingresa una URL de streaming.");
         return;
       }
-      // 1. Detener cualquier radio activa (exclusión global)
       sendControlCommand(CONTROL_ACTIONS.STOP_RADIO);
-      // 2. Encender stream en el Televisor 2
       sendControlCommand(CONTROL_ACTIONS.SET_STREAM, { url });
     });
 
+    // Detener Streaming: el TV2 vuelve a publicidad y se recarga.
     document.getElementById("btnStopStream").addEventListener("click", () => {
       sendControlCommand(CONTROL_ACTIONS.STOP_STREAM);
+      sendControlCommand(CONTROL_ACTIONS.RELOAD_SCREEN, { target: "publicidad" });
     });
 
     // ─── RESET ───────────────────────────────────────────────────────
+    // Restablecer todo: TV1 limpia estado, TV2 recarga página.
     document.getElementById("btnReset").addEventListener("click", () => {
       sendControlCommand(CONTROL_ACTIONS.RESET_ALL);
+      sendControlCommand(CONTROL_ACTIONS.RELOAD_SCREEN, { target: "publicidad" });
     });
   </script>
 </body>
