@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Televisor 2 - Publicidad</title>
+  <title>Televisor 2 - Publicidad / Streaming</title>
   <style>
     html, body {
       margin: 0;
@@ -33,10 +33,8 @@
 </head>
 <body>
 
-  <!-- Video publicitario base -->
   <video id="ad" preload="auto" muted autoplay loop playsinline></video>
-  
-  <!-- Frame para transmisión en vivo -->
+
   <iframe 
     id="streamFrame" 
     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
@@ -44,22 +42,16 @@
     allowfullscreen>
   </iframe>
 
-  <!-- Reproductor de Radio -->
-  <audio id="radioPlayer" style="display:none;"></audio>
-
   <script type="module">
     import { VIDEO_URL } from "../shared/config.js";
     import { listenControlCommands, CONTROL_ACTIONS } from "../shared/controller-sync.js";
 
     const video = document.getElementById("ad");
     const streamFrame = document.getElementById("streamFrame");
-    const radioPlayer = document.getElementById("radioPlayer");
 
-    // ─── ESTADO GLOBAL ───────────────────────────────────────────────
-    // "normal" | "radio" | "stream"
-    let modoActual = "normal";
+    let modoActual = "normal"; // "normal" | "stream"
 
-    // ─── CARGA DEL VIDEO PUBLICITARIO ────────────────────────────────
+    // ─── VIDEO PUBLICITARIO ──────────────────────────────────────────
     function loadAdVideo() {
       if (!video.src || video.src === "" || video.src === window.location.href) {
         video.src = VIDEO_URL;
@@ -85,7 +77,7 @@
     setTimeout(ensureVideoPlaying, 1000);
     setTimeout(ensureVideoPlaying, 3000);
 
-    // ─── FORMATEAR URL DE STREAM ─────────────────────────────────────
+    // ─── HELPERS ─────────────────────────────────────────────────────
     function formatStreamUrl(url) {
       if (!url) return "";
       let videoId = "";
@@ -101,60 +93,46 @@
       return url;
     }
 
-    // ─── RECARGA CON CACHE-BUSTING ───────────────────────────────────
-    function reloadWithCacheBust() {
-      const url = new URL(window.location.href);
-      url.searchParams.set("_r", Date.now().toString());
-      window.location.replace(url.toString());
+    function detenerStreamTotal() {
+      try {
+        streamFrame.src = "";
+        streamFrame.style.display = "none";
+      } catch (e) {
+        console.warn("Error al detener stream:", e);
+      }
     }
 
-    // ─── FUNCIONES DE CAMBIO DE MODO ─────────────────────────────────
-    function entrarModoNormal() {
-      modoActual = "normal";
-      // Detener radio
-      radioPlayer.pause();
-      radioPlayer.removeAttribute("src");
-      radioPlayer.load();
-      // Detener stream
-      streamFrame.src = "";
-      streamFrame.style.display = "none";
-      // Restaurar video publicitario
+    function restaurarVideoPublicitario() {
       video.muted = false;
+      video.pause();
+      video.currentTime = 0;
+      loadAdVideo();
+      video.load();
       video.play().catch(() => {});
     }
 
+    // ─── MODOS ───────────────────────────────────────────────────────
+    function entrarModoNormal() {
+      modoActual = "normal";
+      detenerStreamTotal();
+      restaurarVideoPublicitario();
+    }
 
-    function entrarModoStream(url, target) {
+    // 🎬 MODO STREAM: solo en el Televisor 2
+    function entrarModoStream(url) {
       modoActual = "stream";
-      // Detener radio si había
-      radioPlayer.pause();
-      radioPlayer.removeAttribute("src");
-      radioPlayer.load();
-      // Silenciar y pausar video publicitario
       video.muted = true;
       video.pause();
-      // Mostrar stream si va a esta pantalla
-      if (target === "publicidad" || target === "both") {
-        streamFrame.src = formatStreamUrl(url);
-        streamFrame.style.display = "block";
-      } else {
-        streamFrame.src = "";
-        streamFrame.style.display = "none";
-      }
+      streamFrame.src = formatStreamUrl(url);
+      streamFrame.style.display = "block";
     }
 
     // ─── ESCUCHAR COMANDOS ───────────────────────────────────────────
     listenControlCommands((action, payload) => {
-      console.log("Publicidad recibió comando:", action, payload, "| modo:", modoActual);
+      console.log("Publicidad (TV2) recibió comando:", action, payload, "| modo:", modoActual);
 
-      if (action === CONTROL_ACTIONS.SET_RADIO) {
-        entrarModoRadio(payload.url);
-      }
-      else if (action === CONTROL_ACTIONS.STOP_RADIO) {
-        entrarModoNormal();
-      }
-      else if (action === CONTROL_ACTIONS.SET_STREAM) {
-        entrarModoStream(payload.url, payload.target);
+      if (action === CONTROL_ACTIONS.SET_STREAM) {
+        entrarModoStream(payload.url);
       }
       else if (action === CONTROL_ACTIONS.STOP_STREAM) {
         entrarModoNormal();
@@ -164,9 +142,12 @@
       }
       else if (action === CONTROL_ACTIONS.RELOAD_SCREEN) {
         if (!payload || payload.target === "publicidad" || payload.target === "both") {
-          reloadWithCacheBust();
+          const url = new URL(window.location.href);
+          url.searchParams.set("_r", Date.now().toString());
+          window.location.replace(url.toString());
         }
       }
+      // SET_RADIO / STOP_RADIO se ignoran: la radio es del TV1
     });
   </script>
 </body>

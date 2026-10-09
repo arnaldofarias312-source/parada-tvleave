@@ -109,7 +109,7 @@
     </div>
     <div class="cell cell-top-der">
   <iframe
-    src="http://192.168.1.108:8889/camara"
+    src="https://192.168.1.108:8889/camara"
     style="width:100%; height:100%; border:none; display:block;"
     allow="autoplay; fullscreen"
     allowfullscreen>
@@ -137,15 +137,17 @@
     import { initRoutesSlideshow } from "../shared/routes-slideshow.js";
     import { listenControlCommands, CONTROL_ACTIONS } from "../shared/controller-sync.js";
 
-    let video = document.getElementById("ad");
-    let audio = document.getElementById("bg-audio");
-    const streamFrame = document.getElementById("streamFrame");
+    const video = document.getElementById("ad");
+    const audio = document.getElementById("bg-audio");
 
     const radioPlayer = new Audio();
     radioPlayer.crossOrigin = "anonymous";
     radioPlayer.preload = "auto";
 
-    // ─── ESTADO GLOBAL ───────────────────────────────────────────────
+    // Modos posibles en el TV1:
+    //   "normal"  → audio fondo + video panel
+    //   "radio"   → solo radio
+    //   "muteado" → TV2 tiene stream activo, aquí no suena nada
     let modoActual = "normal";
 
     // ─── VIDEO PANEL ─────────────────────────────────────────────────
@@ -159,28 +161,30 @@
     video.addEventListener("canplay", startVideoPanel);
 
     // ─── AUDIO DE FONDO ──────────────────────────────────────────────
-    audio.src = AUDIO_URL_FONDO;
-    audio.loop = true;
-    audio.muted = false;
-    audio.volume = 1;
-
-    function iniciarAudioFondo() {
-      if (modoActual !== "normal") return;
+    function asignarAudioFondo() {
       if (!audio.src || audio.src === "" || audio.src === window.location.href) {
         audio.src = AUDIO_URL_FONDO;
       }
+    }
+
+    function iniciarAudioFondo() {
+      if (modoActual !== "normal") return;
+      asignarAudioFondo();
       audio.muted = false;
       audio.volume = 1;
-      if (audio.paused) {
-        audio.play().catch(() => {});
-      }
+      if (audio.paused) audio.play().catch(() => {});
     }
 
     function detenerAudioFondo() {
       try {
         audio.pause();
+        audio.currentTime = 0;
+        audio.muted = true;
+        audio.volume = 0;
+        audio.removeAttribute("src");
+        audio.load();
       } catch (e) {
-        console.warn("Error al pausar audio de fondo:", e);
+        console.warn("Error al detener audio de fondo:", e);
       }
     }
 
@@ -188,80 +192,56 @@
 
     audio.addEventListener("canplay", () => {
       if (modoActual === "normal" && audio.paused) {
-        iniciarAudioFondo();
+        audio.play().catch(() => {});
       }
     });
 
-    // ─── RECARGA CON CACHE-BUSTING ───────────────────────────────────
-    function reloadWithCacheBust() {
-      const url = new URL(window.location.href);
-      url.searchParams.set("_r", Date.now().toString());
-      window.location.replace(url.toString());
-    }
-
-    // ─── FORMATEAR URL DE STREAM ─────────────────────────────────────
-    function formatStreamUrl(url) {
-      if (!url) return "";
-      let videoId = "";
-      if (url.includes("v=")) videoId = url.split("v=")[1]?.split("&")[0];
-      else if (url.includes("youtu.be/")) videoId = url.split("youtu.be/")[1]?.split("?")[0];
-      else if (url.includes("youtube.com/live/")) videoId = url.split("youtube.com/live/")[1]?.split("?")[0];
-      else if (url.includes("embed/")) videoId = url.split("embed/")[1]?.split("?")[0];
-
-      if (videoId) {
-        const origin = encodeURIComponent(window.location.origin);
-        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&enablejsapi=1&origin=${origin}`;
+    // ─── HELPERS ─────────────────────────────────────────────────────
+    function detenerRadioTotal() {
+      try {
+        radioPlayer.pause();
+        radioPlayer.currentTime = 0;
+        radioPlayer.removeAttribute("src");
+        radioPlayer.load();
+      } catch (e) {
+        console.warn("Error al detener radio:", e);
       }
-      return url;
     }
 
-    // ─── FUNCIONES DE CAMBIO DE MODO ─────────────────────────────────
+    // ─── MODOS ───────────────────────────────────────────────────────
     function entrarModoNormal() {
       modoActual = "normal";
-      radioPlayer.pause();
-      radioPlayer.removeAttribute("src");
-      radioPlayer.load();
-      streamFrame.src = "";
-      streamFrame.style.display = "none";
+      detenerRadioTotal();
       video.muted = true;
       video.play().catch(() => {});
       iniciarAudioFondo();
     }
 
-    // 🔇 RADIO: mutear TODO excepto la radio
     function entrarModoRadio(url) {
       modoActual = "radio";
-      // Silenciar TODO lo local
-      detenerAudioFondo();          // audio de fondo: pausa + src vacío
-      video.muted = true;           // video del panel muteado
-      streamFrame.src = "";         // stream detenido
-      streamFrame.style.display = "none";
-      // Solo suena la radio
+      detenerAudioFondo();
+      video.muted = true;
+      detenerRadioTotal();
       radioPlayer.src = url;
       radioPlayer.muted = false;
       radioPlayer.volume = 1;
       radioPlayer.play().catch((e) => console.warn("Error al reproducir radio:", e));
     }
 
-    function entrarModoStream(url, target) {
-      modoActual = "stream";
+    // 🔇 MODO MUTEADO: el TV2 está reproduciendo un stream, así que aquí
+    //    no debe sonar nada (ni audio de fondo, ni radio).
+    function entrarModoMuteado() {
+      modoActual = "muteado";
+      detenerRadioTotal();
       detenerAudioFondo();
       video.muted = true;
-      radioPlayer.pause();
-      radioPlayer.removeAttribute("src");
-      radioPlayer.load();
-      if (target === "panel" || target === "both") {
-        streamFrame.src = formatStreamUrl(url);
-        streamFrame.style.display = "block";
-      } else {
-        streamFrame.src = "";
-        streamFrame.style.display = "none";
-      }
+      // El video del panel sigue visible
+      video.play().catch(() => {});
     }
 
-    // ─────────────────────── ESCUCHAR COMANDOS ───────────────────────────────────
+    // ─── ESCUCHAR COMANDOS ───────────────────────────────────────────
     listenControlCommands((action, payload) => {
-      console.log("Panel recibió comando:", action, payload, "| modo:", modoActual);
+      console.log("Panel (TV1) recibió comando:", action, payload, "| modo:", modoActual);
 
       if (action === CONTROL_ACTIONS.SET_RADIO) {
         entrarModoRadio(payload.url);
@@ -269,26 +249,33 @@
       else if (action === CONTROL_ACTIONS.STOP_RADIO) {
         entrarModoNormal();
       }
+      // ⚡ Aunque el stream se muestra en el TV2, el TV1 igual reacciona
+      //    para silenciar su audio de fondo mientras el stream esté activo.
       else if (action === CONTROL_ACTIONS.SET_STREAM) {
-        entrarModoStream(payload.url, payload.target);
+        entrarModoMuteado();
       }
       else if (action === CONTROL_ACTIONS.STOP_STREAM) {
-        entrarModoNormal();
+        // Solo restaurar audio si no había radio activa
+        if (modoActual !== "radio") {
+          entrarModoNormal();
+        }
       }
       else if (action === CONTROL_ACTIONS.RESET_ALL) {
         entrarModoNormal();
       }
       else if (action === CONTROL_ACTIONS.RELOAD_SCREEN) {
         if (!payload || payload.target === "panel" || payload.target === "both") {
-          reloadWithCacheBust();
+          const url = new URL(window.location.href);
+          url.searchParams.set("_r", Date.now().toString());
+          window.location.replace(url.toString());
         }
       }
     });
 
-    // ─── DESBLOQUEO DE AUDIO (Smart TV) ──────────────────────────────
+    // ─── DESBLOQUEO DE AUDIO ─────────────────────────────────────────
     const unlockAudio = () => {
       if (modoActual === "normal") iniciarAudioFondo();
-      if (video.paused && modoActual !== "stream") video.play().catch(() => {});
+      if (video.paused) video.play().catch(() => {});
     };
     window.addEventListener("click", unlockAudio, { once: true });
     window.addEventListener("touchstart", unlockAudio, { once: true });
@@ -304,6 +291,7 @@
           radioPlayer.play().catch(() => {});
         }
       }
+      // En modo "muteado" no hacemos nada
     });
 
     initRoutesSlideshow(document.getElementById("rutas-slide"), { intervalMs: 7000 });
