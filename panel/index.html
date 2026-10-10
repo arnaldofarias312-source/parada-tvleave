@@ -130,6 +130,9 @@
     allowfullscreen>
   </iframe>
 
+  <!-- Capa invisible para capturar el primer toque en toda la pantalla y desbloquear el audio -->
+  <div id="audio-unlocker" style="position: fixed; inset: 0; z-index: 99998; background: transparent; cursor: pointer;"></div>
+
   <audio id="bg-audio" preload="auto" loop src="https://sfwlrpwamioiazmqfpmp.supabase.co/storage/v1/object/public/media-parada/fondo.mp3?v=2"></audio>
 
   <script type="module">
@@ -272,14 +275,24 @@
       }
     });
 
-    // ─── DESBLOQUEO DE AUDIO ─────────────────────────────────────────
+    // ─── DESBLOQUEO DE AUDIO (Smart TV / Kiosco) ─────────────────────
+    const unlockerEl = document.getElementById("audio-unlocker");
     const unlockAudio = () => {
+      if (unlockerEl) unlockerEl.remove();
       if (modoActual === "normal") iniciarAudioFondo();
       if (video.paused) video.play().catch(() => {});
     };
-    window.addEventListener("click", unlockAudio, { once: true });
-    window.addEventListener("touchstart", unlockAudio, { once: true });
-    window.addEventListener("keydown", unlockAudio, { once: true });
+
+    if (unlockerEl) {
+      unlockerEl.addEventListener("pointerdown", unlockAudio, { once: true });
+      unlockerEl.addEventListener("click", unlockAudio, { once: true });
+      unlockerEl.addEventListener("touchstart", unlockAudio, { once: true });
+    }
+
+    window.addEventListener("pointerdown", unlockAudio, { capture: true, once: true });
+    window.addEventListener("click", unlockAudio, { capture: true, once: true });
+    window.addEventListener("touchstart", unlockAudio, { capture: true, once: true });
+    window.addEventListener("keydown", unlockAudio, { capture: true, once: true });
 
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) return;
